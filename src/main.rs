@@ -1,11 +1,24 @@
-#[macro_use] extern crate rocket;
+mod rss;
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 
 #[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
+async fn index() -> impl Responder {
+    HttpResponse::Ok().body(rss::list())
 }
 
-#[launch]
-fn rocket() -> _ {
-    rocket::build().mount("/", routes![index])
+#[get("/podcasts/{title}")]
+async fn podcast_feed(title: web::Path<String>) -> std::io::Result<String> {
+    Ok(format!("RSS feed for {} podcast", title))
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    HttpServer::new(|| {
+        App::new()
+            .service(index)
+            .service(podcast_feed)
+    })
+    .bind(("127.0.0.1", 7777))?
+    .run()
+    .await
 }
